@@ -1,0 +1,18 @@
+{
+  "name": "retell-twilio-supabase-realestate-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tiny Retell + Twilio + Supabase real estate AI receptionist demo.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "retell-sdk": "^5.1.0"
+  }
+}
