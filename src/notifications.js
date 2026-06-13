@@ -53,7 +53,7 @@ export async function sendSmsNotification(lead, project) {
 export async function sendEmailNotification(lead, project) {
   const apiKey = env("RESEND_API_KEY");
   const from = env("EMAIL_FROM");
-  const to = project?.notifyEmail || env("NOTIFY_EMAIL_TO");
+  const to = env("NOTIFY_EMAIL_TO");
 
   if (!apiKey || !from || !to) {
     return { skipped: true, reason: "Resend email env vars are not fully configured." };
