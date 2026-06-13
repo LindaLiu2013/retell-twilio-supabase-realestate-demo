@@ -1,7 +1,19 @@
 export function env(name, fallback = undefined) {
   const value = process.env[name];
-  if (value === undefined || value === "") return fallback;
-  return value;
+  if (value === undefined) return fallback;
+
+  const trimmed = value.trim();
+  if (
+    trimmed === "" ||
+    trimmed.startsWith("TODO") ||
+    trimmed.includes("TODO_") ||
+    trimmed.includes("your-") ||
+    trimmed.includes("your_")
+  ) {
+    return fallback;
+  }
+
+  return trimmed;
 }
 
 export function requiredEnv(name) {

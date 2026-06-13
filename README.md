@@ -39,23 +39,36 @@ The demo writes to `public.leads` using Supabase REST API and the service role k
 
 Copy `.env.example` to `.env` locally, then set the same values in Render.
 
-Required for full flow:
+Required for the core Retell -> Supabase flow:
 
 ```bash
 RETELL_API_KEY=...
 RETELL_AGENT_ID=...
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+Optional for SMS lead notifications:
+
+```bash
 TWILIO_ACCOUNT_SID=...
 TWILIO_AUTH_TOKEN=...
 TWILIO_FROM_NUMBER=...
 NOTIFY_SMS_TO=...
+```
+
+Optional for email lead notifications:
+
+```bash
 RESEND_API_KEY=...
 EMAIL_FROM=...
 NOTIFY_EMAIL_TO=...
 ```
 
-For local testing of `/demo/lead`, Supabase is required. SMS/email are skipped if their env vars are missing.
+For local testing of `/demo/lead`, Supabase is required. SMS/email are skipped if their env vars are missing. This means the MVP works in both cases:
+
+- no Twilio number yet: lead is saved to Supabase, SMS is skipped, email is sent if configured
+- Twilio SMS-capable number provided: lead is saved to Supabase and SMS notification is sent
 
 ## 3. Retell Agent Setup
 
@@ -140,7 +153,9 @@ RETELL_VERIFY_SIGNATURE=false
 
 ## 4. Twilio Inbound Call Setup
 
-There are two practical patterns.
+Twilio is optional for the first backend MVP. If you do not have a Twilio number yet, test the Retell agent through Retell's own test tools and use the Retell custom function endpoint to save leads.
+
+When you are ready for public inbound calls, there are two practical patterns.
 
 ### Option A: Retell SIP trunk / imported number
 
