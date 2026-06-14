@@ -1,0 +1,9 @@
+{
+  "businessName": "ABC Project Marketing",
+  "industry": "real_estate_project_marketing",
+  "agentName": "Real Estate AI Receptionist",
+  "timezone": "Australia/Sydney",
+  "fallbackEmailEnv": "NOTIFY_EMAIL_TO",
+  "fallbackSmsEnv": "NOTIFY_SMS_TO",
+  "handoffMessage": "The right salesperson has been notified and will follow up shortly."
+}

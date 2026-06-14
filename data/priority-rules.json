@@ -1,0 +1,28 @@
+{
+  "high": [
+    "inspect",
+    "inspection",
+    "this week",
+    "today",
+    "tomorrow",
+    "ready to buy",
+    "ready to proceed",
+    "pre-approved",
+    "preapproved",
+    "cash buyer",
+    "urgent"
+  ],
+  "low": [
+    "just browsing",
+    "browsing",
+    "not sure",
+    "maybe later",
+    "no phone",
+    "prefer not to say",
+    "don't know",
+    "do not know",
+    "500k",
+    "$500k"
+  ],
+  "default": "medium"
+}

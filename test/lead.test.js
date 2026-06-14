@@ -27,6 +27,7 @@ test("normalizes Retell wrapped custom function payload", () => {
   assert.equal(project.name, "Harbour View Residences");
   assert.equal(lead.project_name, "Harbour View Residences");
   assert.equal(lead.caller_phone, "0405547481");
+  assert.equal(lead.priority, "medium");
   assert.equal(lead.call_id, "call_123");
   assert.equal(lead.twilio_call_sid, "CA123");
 });
@@ -41,6 +42,30 @@ test("accepts Retell args-only payload shape", () => {
 
   assert.equal(lead.project_name, "Bondi Beach Collection");
   assert.equal(lead.caller_phone, "+61400000000");
+});
+
+test("calculates high priority from urgent inspection intent", () => {
+  const { lead } = normalizeLead({
+    project_name: "Bondi Beach",
+    caller_name: "Urgent Buyer",
+    caller_phone: "+61 400 000 000",
+    budget: "above $1,000,000",
+    transcript: "Caller wants an inspection this week and is ready to proceed."
+  });
+
+  assert.equal(lead.priority, "high");
+});
+
+test("calculates low priority from browsing intent", () => {
+  const { lead } = normalizeLead({
+    project_name: "Bondi Beach",
+    caller_name: "Browsing Buyer",
+    caller_phone: "+61 400 000 000",
+    budget: "$500k",
+    transcript: "Caller is just browsing."
+  });
+
+  assert.equal(lead.priority, "low");
 });
 
 test("throws clear validation errors", () => {

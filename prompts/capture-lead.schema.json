@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "required": [
+    "project_name",
+    "caller_name",
+    "caller_phone",
+    "budget"
+  ],
+  "properties": {
+    "caller_name": {
+      "type": "string",
+      "description": "The caller's full name."
+    },
+    "caller_phone": {
+      "type": "string",
+      "description": "The caller's best callback phone number."
+    },
+    "project_name": {
+      "type": "string",
+      "description": "The real estate project the caller is interested in."
+    },
+    "budget": {
+      "type": "string",
+      "description": "The caller's approximate budget or price range."
+    }
+  }
+}

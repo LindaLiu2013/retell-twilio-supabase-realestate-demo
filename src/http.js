@@ -21,6 +21,14 @@ export function sendXml(res, status, xml) {
   res.end(xml);
 }
 
+export function sendHtml(res, status, html) {
+  res.writeHead(status, {
+    "content-type": "text/html; charset=utf-8",
+    "content-length": Buffer.byteLength(html)
+  });
+  res.end(html);
+}
+
 export function parseJson(rawBody) {
   if (!rawBody) return {};
   return JSON.parse(rawBody);

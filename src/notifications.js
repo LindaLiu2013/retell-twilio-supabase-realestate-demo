@@ -3,10 +3,13 @@ import { env } from "./config.js";
 function leadMessage(lead, project) {
   return [
     "New AI receptionist lead",
+    lead.priority ? `Priority: ${lead.priority.toUpperCase()}` : null,
     `Project: ${lead.project_name}`,
     `Name: ${lead.caller_name}`,
     `Phone: ${lead.caller_phone}`,
     `Budget: ${lead.budget}`,
+    lead.handoff_summary ? `Summary: ${lead.handoff_summary}` : null,
+    lead.qualification_reason ? `Reason: ${lead.qualification_reason}` : null,
     project?.salesperson ? `Salesperson: ${project.salesperson}` : null,
     lead.call_id ? `Retell call: ${lead.call_id}` : null
   ]
@@ -53,6 +56,8 @@ export async function sendSmsNotification(lead, project) {
 export async function sendEmailNotification(lead, project) {
   const apiKey = env("RESEND_API_KEY");
   const from = env("EMAIL_FROM");
+  // Testing-stage behavior: send all Resend emails to the central inbox in NOTIFY_EMAIL_TO.
+  // In production, this can be changed to route to project-specific salesperson emails.
   const to = env("NOTIFY_EMAIL_TO");
 
   if (!apiKey || !from || !to) {

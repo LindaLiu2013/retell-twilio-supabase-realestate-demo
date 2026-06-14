@@ -1,4 +1,5 @@
 import { matchProject } from "./projects.js";
+import { calculatePriority } from "./priority.js";
 
 function compactPhone(phone) {
   return String(phone ?? "").replace(/[^\d+]/g, "");
@@ -9,10 +10,10 @@ export function extractRetellArgs(payload) {
   return payload ?? {};
 }
 
-export function normalizeLead(payload) {
+export function normalizeLead(payload, runtimeConfig = {}) {
   const args = extractRetellArgs(payload);
   const projectInput = args.project_name || args.project || args.interested_project;
-  const project = matchProject(projectInput);
+  const project = matchProject(projectInput, runtimeConfig.projects);
 
   const callerName = args.caller_name || args.name || args.full_name;
   const callerPhone = compactPhone(args.caller_phone || args.phone || args.mobile);
@@ -32,6 +33,13 @@ export function normalizeLead(payload) {
 
   const call = payload.call ?? {};
   const twilioCallSid = call.telephony_identifier?.twilio_call_sid || args.twilio_call_sid;
+  const transcript = call.transcript || args.transcript || null;
+  const priority =
+    args.priority ||
+    calculatePriority(
+      { projectInput, callerName, callerPhone, budget, transcript },
+      runtimeConfig.priorityRules
+    );
 
   return {
     project,
@@ -41,10 +49,11 @@ export function normalizeLead(payload) {
       caller_name: String(callerName).trim(),
       caller_phone: callerPhone,
       budget: String(budget).trim(),
+      priority,
       matched_salesperson: project?.salesperson ?? null,
       call_id: call.call_id || args.call_id || null,
       twilio_call_sid: twilioCallSid || null,
-      transcript: call.transcript || null,
+      transcript,
       raw_payload: payload
     }
   };
