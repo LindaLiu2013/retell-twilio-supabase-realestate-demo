@@ -14,9 +14,11 @@ export function adminPage() {
     .toolbar, .status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     .panel { background: #fff; border: 1px solid #dfe3ea; border-radius: 8px; padding: 16px; }
     .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .panel-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
     label { display: grid; gap: 6px; font-size: 13px; font-weight: 650; color: #3d4758; }
     input, textarea { box-sizing: border-box; width: 100%; border: 1px solid #cfd6e2; border-radius: 6px; padding: 10px; font: inherit; background: #fff; color: #172033; }
     textarea { min-height: 360px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.45; resize: vertical; }
+    textarea.prompt { min-height: 520px; }
     button { border: 1px solid #b9c3d4; background: #fff; color: #172033; border-radius: 6px; padding: 10px 14px; font: inherit; font-weight: 650; cursor: pointer; }
     button.primary { background: #1769e0; border-color: #1769e0; color: #fff; }
     button:disabled { opacity: .55; cursor: not-allowed; }
@@ -56,9 +58,18 @@ export function adminPage() {
     </section>
     <section class="panel">
       <strong>Config source</strong>
-      <p class="hint">Business, projects, and priority rules load from Supabase <code>app_config</code> by default. Saving also writes <code>data/projects.json</code>, which can be uploaded to Retell Knowledge Base or exposed at <code>/knowledge/projects.json</code>.</p>
-      <p class="hint">Retell Knowledge URL: <code id="knowledgeUrl"></code></p>
+      <p class="hint">Business, projects, and priority rules load from Supabase <code>app_config</code> by default.</p>
       <pre id="details"></pre>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <strong>Generated Retell Prompt</strong>
+          <p class="hint">Copy this into Retell for the fastest live-call setup.</p>
+        </div>
+        <button id="copyPrompt">Copy Prompt</button>
+      </div>
+      <textarea id="generatedPrompt" class="prompt" spellcheck="false" readonly></textarea>
     </section>
   </main>
   <script>
@@ -71,7 +82,8 @@ export function adminPage() {
       source: document.querySelector("#source"),
       message: document.querySelector("#message"),
       details: document.querySelector("#details"),
-      knowledgeUrl: document.querySelector("#knowledgeUrl")
+      generatedPrompt: document.querySelector("#generatedPrompt"),
+      copyPrompt: document.querySelector("#copyPrompt")
     };
 
     function headers() {
@@ -109,6 +121,62 @@ export function adminPage() {
       }
     }
 
+    function projectListText(projects) {
+      if (!Array.isArray(projects) || projects.length === 0) return "No projects configured.";
+      return projects
+        .map((project, index) => {
+          const aliases = Array.isArray(project.aliases) && project.aliases.length
+            ? " Aliases: " + project.aliases.join(", ") + "."
+            : "";
+          return (index + 1) + ". " + project.name + aliases;
+        })
+        .join("\\n");
+    }
+
+    function generateRetellPrompt() {
+      try {
+        const projects = readEditor("projects");
+        els.generatedPrompt.value = [
+          "You are the AI receptionist for an Australian real estate sales and project marketing business.",
+          "",
+          "Your job is to qualify inbound property enquiries and create a lead for the sales team.",
+          "",
+          "Available projects:",
+          projectListText(projects),
+          "",
+          "Conversation flow:",
+          "1. Greet the caller warmly.",
+          "2. Ask which project they are interested in, using the available projects above.",
+          "3. If the caller is unsure, offer the available project names.",
+          "4. Capture their full name.",
+          "5. Capture their best callback phone number.",
+          "6. Ask their approximate budget or price range.",
+          "7. Confirm the details back to the caller.",
+          "8. Only after the caller has provided their approximate budget or price range, say: \\"Please wait while I write down your inquiry.\\"",
+          "9. Then call the custom function 'capture_lead'.",
+          "10. After 'capture_lead' succeeds, tell the caller that the right salesperson has been notified and will follow up shortly.",
+          "",
+          "Rules:",
+          "- Do not call 'get_projects'.",
+          "- Use the available project list in this prompt during the live conversation.",
+          "- Do not call 'capture_lead' until all required details are collected: project name, caller name, callback phone number, and approximate budget or price range.",
+          "- The approximate budget or price range is mandatory. If it has not been captured yet, ask for it before calling 'capture_lead'.",
+          "- Before calling 'capture_lead', confirm the collected details back to the caller.",
+          "- Always say \\"Please wait while I write down your inquiry.\\" immediately before calling 'capture_lead'.",
+          "- Keep questions short and natural.",
+          "- If the caller is unsure which project, offer the available project names.",
+          "- If the caller names a project that sounds close to one of the available projects or aliases, capture the caller's wording naturally. The backend will match it.",
+          "- Read phone numbers back carefully.",
+          "- If a caller refuses to provide a detail, politely explain it is needed so the sales team can follow up.",
+          "- Never invent property availability, prices, discounts, investment returns, legal advice, or financial advice.",
+          "- If the caller asks about something unrelated, such as going out to dinner, restaurants, personal chat, jokes, general advice, or any topic not related to real estate enquiries, respond politely and redirect them back to the property enquiry. Example: \\"I can only help with property project enquiries today. Which project are you interested in?\\"",
+          "- If 'capture_lead' is taking a moment, reassure the caller briefly and do not repeat the same message multiple times."
+        ].join("\\n");
+      } catch (error) {
+        els.generatedPrompt.value = "Fix Projects JSON to generate the Retell prompt: " + error.message;
+      }
+    }
+
     async function loadConfig() {
       els.load.disabled = true;
       try {
@@ -120,6 +188,7 @@ export function adminPage() {
         els.priorityRules.value = pretty(data.priorityRules);
         els.source.textContent = data.source;
         els.details.textContent = sourceDetails(data);
+        generateRetellPrompt();
         setStatus("Loaded configuration.", data.source !== "supabase");
       } catch (error) {
         setStatus(error.message, true);
@@ -145,6 +214,7 @@ export function adminPage() {
         if (!response.ok) throw new Error(data.error || "Save failed");
         els.source.textContent = data.source;
         els.details.textContent = sourceDetails(data);
+        generateRetellPrompt();
         setStatus("Saved to Supabase DB and local JSON knowledge files.", false);
       } catch (error) {
         setStatus(error.message, true);
@@ -155,7 +225,11 @@ export function adminPage() {
 
     els.load.addEventListener("click", loadConfig);
     els.save.addEventListener("click", saveConfig);
-    els.knowledgeUrl.textContent = window.location.origin + "/knowledge/projects.json";
+    els.projects.addEventListener("input", generateRetellPrompt);
+    els.copyPrompt.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(els.generatedPrompt.value);
+      setStatus("Copied generated Retell prompt.", false);
+    });
     loadConfig();
   </script>
 </body>
