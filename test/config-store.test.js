@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync, writeFileSync } from "node:fs";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   loadRuntimeConfig,
   resetRuntimeConfigCacheForTests,
@@ -9,10 +11,19 @@ import {
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
+const jsonFiles = [
+  fileURLToPath(new URL("../data/business.json", import.meta.url)),
+  fileURLToPath(new URL("../data/projects.json", import.meta.url)),
+  fileURLToPath(new URL("../data/priority-rules.json", import.meta.url))
+];
+const originalJsonFiles = new Map(jsonFiles.map((path) => [path, readFileSync(path, "utf8")]));
 
 function restore() {
   globalThis.fetch = originalFetch;
   process.env = { ...originalEnv };
+  for (const [path, content] of originalJsonFiles) {
+    writeFileSync(path, content, "utf8");
+  }
   resetRuntimeConfigCacheForTests();
 }
 
@@ -86,7 +97,7 @@ test("falls back to JSON config when app_config cannot be loaded", async () => {
   assert.equal(config.priorityRules.default, "medium");
 });
 
-test("saves admin JSON config into app_config rows", async () => {
+test("saves admin JSON config into app_config rows and local JSON files", async () => {
   setSupabaseEnv();
   const payload = {
     business: { businessName: "Saved Agency" },
@@ -121,6 +132,9 @@ test("saves admin JSON config into app_config rows", async () => {
   });
   assert.equal(config.business.businessName, "Saved Agency");
   assert.equal(config.projects[0].name, "Saved Project");
+  assert.deepEqual(JSON.parse(readFileSync(jsonFiles[0], "utf8")), payload.business);
+  assert.deepEqual(JSON.parse(readFileSync(jsonFiles[1], "utf8")), payload.projects);
+  assert.deepEqual(JSON.parse(readFileSync(jsonFiles[2], "utf8")), payload.priorityRules);
 });
 
 test("validates admin config before saving", () => {

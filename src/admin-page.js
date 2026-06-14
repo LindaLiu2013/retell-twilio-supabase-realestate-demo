@@ -31,11 +31,11 @@ export function adminPage() {
   <header>
     <div>
       <h1>AI Receptionist Admin</h1>
-      <p class="hint">Edit business, projects, and priority rules. The page loads Supabase app_config first; JSON files are fallback only.</p>
+      <p class="hint">Edit business, projects, and priority rules. Save updates Supabase app_config and the local JSON knowledge files.</p>
     </div>
     <div class="toolbar">
       <button id="load">Load</button>
-      <button id="save" class="primary">Save to Supabase</button>
+      <button id="save" class="primary">Save Config</button>
     </div>
   </header>
   <main>
@@ -56,7 +56,8 @@ export function adminPage() {
     </section>
     <section class="panel">
       <strong>Config source</strong>
-      <p class="hint">Business, projects, and priority rules load from Supabase <code>app_config</code> by default. If a row is missing or Supabase is unavailable, only then does the service use the JSON fallback files.</p>
+      <p class="hint">Business, projects, and priority rules load from Supabase <code>app_config</code> by default. Saving also writes <code>data/projects.json</code>, which can be uploaded to Retell Knowledge Base or exposed at <code>/knowledge/projects.json</code>.</p>
+      <p class="hint">Retell Knowledge URL: <code id="knowledgeUrl"></code></p>
       <pre id="details"></pre>
     </section>
   </main>
@@ -69,7 +70,8 @@ export function adminPage() {
       priorityRules: document.querySelector("#priorityRules"),
       source: document.querySelector("#source"),
       message: document.querySelector("#message"),
-      details: document.querySelector("#details")
+      details: document.querySelector("#details"),
+      knowledgeUrl: document.querySelector("#knowledgeUrl")
     };
 
     function headers() {
@@ -143,7 +145,7 @@ export function adminPage() {
         if (!response.ok) throw new Error(data.error || "Save failed");
         els.source.textContent = data.source;
         els.details.textContent = sourceDetails(data);
-        setStatus("Saved to Supabase DB.", false);
+        setStatus("Saved to Supabase DB and local JSON knowledge files.", false);
       } catch (error) {
         setStatus(error.message, true);
       } finally {
@@ -153,6 +155,7 @@ export function adminPage() {
 
     els.load.addEventListener("click", loadConfig);
     els.save.addEventListener("click", saveConfig);
+    els.knowledgeUrl.textContent = window.location.origin + "/knowledge/projects.json";
     loadConfig();
   </script>
 </body>

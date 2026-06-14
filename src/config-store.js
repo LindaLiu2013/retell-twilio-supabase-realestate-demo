@@ -1,5 +1,6 @@
 import { business as fallbackBusiness } from "./business.js";
 import { env, requiredEnv } from "./config.js";
+import { writeJson } from "./data.js";
 import { projects as fallbackProjects } from "./projects.js";
 import { priorityRules as fallbackPriorityRules } from "./priority.js";
 
@@ -117,6 +118,10 @@ export async function saveRuntimeConfig({ business, projects, priorityRules }) {
   if (!response.ok) {
     throw new Error(`Config save failed (${response.status}): ${text}`);
   }
+
+  writeJson("../data/business.json", business);
+  writeJson("../data/projects.json", projects);
+  writeJson("../data/priority-rules.json", priorityRules);
 
   cache = normalizeConfig(JSON.parse(text));
   cache.source = "supabase";

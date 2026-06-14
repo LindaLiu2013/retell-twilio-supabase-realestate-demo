@@ -46,6 +46,27 @@ async function getProjects() {
   };
 }
 
+async function getProjectsKnowledge() {
+  const runtimeConfig = await loadRuntimeConfig({ refresh: true });
+  return {
+    knowledge_type: "real_estate_project_marketing_projects",
+    updated_at: new Date().toISOString(),
+    instructions: [
+      "Use these projects as the current available projects.",
+      "Do not call get_projects during the live conversation.",
+      "If a caller says an alias, capture the official project name when possible.",
+      "Never invent availability, prices, discounts, legal advice, or financial advice."
+    ],
+    projects: runtimeConfig.projects.map((project) => ({
+      name: project.name,
+      aliases: project.aliases || [],
+      salesperson: project.salesperson || null
+    })),
+    source: runtimeConfig.source,
+    fallbackReason: runtimeConfig.fallbackReason
+  };
+}
+
 async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -55,6 +76,10 @@ async function route(req, res) {
 
   if (req.method === "GET" && url.pathname === "/projects") {
     return sendJson(res, 200, await getProjects());
+  }
+
+  if (req.method === "GET" && url.pathname === "/knowledge/projects.json") {
+    return sendJson(res, 200, await getProjectsKnowledge());
   }
 
   if (req.method === "GET" && url.pathname === "/config") {
