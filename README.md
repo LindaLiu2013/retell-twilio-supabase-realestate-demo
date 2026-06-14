@@ -10,8 +10,9 @@ Inbound call -> Retell agent asks which project the caller is interested in -> c
 flowchart LR
   Caller["Inbound caller"] --> Twilio["Twilio phone number"]
   Twilio --> Retell["Retell AI receptionist"]
+  Retell -->|"dynamic welcome / get_projects custom function"| API["Render Node service"]
   Retell -->|"capture_lead custom function"| API["Render Node service"]
-  Admin["Business owner admin portal"] -->|"edit config and copy prompt"| API
+  Admin["Business owner admin portal"] -->|"edit project and business config"| API
   API --> Config["Supabase app_config table"]
   Config -. "offline or missing" .-> JSON["JSON fallback config"]
   JSON --> API
@@ -25,7 +26,10 @@ flowchart LR
 The current system has two data paths:
 
 - Runtime config: business settings, projects, and priority rules are loaded from Supabase `app_config` first, with local JSON files as fallback.
-- Lead capture: Retell collects caller details, the backend matches the project, enriches priority/handoff notes with OpenAI when configured, writes to Supabase `leads`, then sends notifications.
+- Dynamic project lookup: Retell calls `get_projects` during the dynamic welcome/opening flow, so the agent can offer the latest project list without hardcoding project names in the prompt.
+- Lead capture: Retell collects caller details, calls `capture_lead`, the backend matches the project, enriches priority/handoff notes with OpenAI when configured, writes to Supabase `leads`, then sends notifications.
+
+This keeps project maintenance simple: the business owner updates project details in the admin portal, saves to Supabase `app_config`, and the Retell agent gets the latest projects through `get_projects` on the next call.
 
 This repo contains the API service and a lightweight admin portal. You still configure the actual Retell voice agent and Twilio number in their dashboards.
 
@@ -143,8 +147,9 @@ For local testing of `/demo/lead`, Supabase is required. SMS/email are skipped i
 
 Retell custom functions send a POST request to your endpoint with `name`, `call`, and `args`. This demo also supports Retell's "Payload: args only" mode.
 
-Create a **Single prompt** Retell voice agent with this function attached:
+Create a **Single prompt** Retell voice agent with these functions attached:
 
+- `get_projects`
 - `capture_lead`
 
 Agent name:
@@ -153,11 +158,37 @@ Agent name:
 Real Estate AI Receptionist
 ```
 
-Retell agent prompt:
+Retell project lookup:
 
-Use the **Generated Retell Prompt** in the admin portal. The admin page builds a fresh prompt from the current Projects JSON, so a business owner can update project names, aliases, routing, and priority rules in one place, save the config to Supabase, then copy and paste the updated prompt into Retell AI.
+Use Retell's dynamic welcome/opening flow to call `get_projects` before the agent asks which project the caller is interested in. The response returns the current project names from Supabase-backed config, so the agent can offer up-to-date options.
 
-This avoids slow live project lookups during a call. The live Retell agent should only call `capture_lead` after it has collected the required lead details.
+This is the easiest-maintenance architecture for a real estate project marketing business:
+
+- The business owner updates project names, aliases, salesperson routing, and priority rules in the admin UI.
+- The admin UI saves those changes to Supabase `app_config`.
+- Retell calls `get_projects` at the start of the conversation.
+- The caller hears the current project options without the owner manually editing the Retell prompt.
+- Retell only calls `capture_lead` after collecting project name, caller name, phone number, and budget.
+
+The admin portal still provides a generated prompt as a fallback/copyable aid, but normal project updates should be handled through the admin UI plus `get_projects`.
+
+Add a Retell custom function for dynamic project lookup:
+
+```json
+{
+  "name": "get_projects",
+  "description": "Return the current real estate project list from the backend so the agent can offer accurate project options.",
+  "method": "POST",
+  "url": "https://retell-twilio-supabase-realestate-demo.onrender.com/retell/functions/get-projects",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "parameters": {
+    "type": "object",
+    "properties": {}
+  }
+}
+```
 
 Add a Retell custom function for lead capture:
 
@@ -304,16 +335,18 @@ The admin portal lets a business owner edit:
 
 Click **Save Config** to write the editable config to Supabase `public.app_config`. The app uses that database config for project matching, lead routing, priority rules, and notification behavior.
 
-The admin portal also generates an updated Retell prompt from the current Projects JSON. After changing projects or aliases, the business owner can:
+After saving, Retell's `get_projects` function reads the updated project list from the backend. This means the business owner can maintain projects from the admin UI without editing Retell for every project change.
+
+Recommended business-owner workflow:
 
 1. Click **Save Config**.
-2. Review the **Generated Retell Prompt**.
-3. Click **Copy Prompt**.
-4. Paste the prompt into the Retell AI agent.
+2. Retell calls `get_projects` during the dynamic welcome/opening flow.
+3. The caller hears the latest project options.
+4. Retell calls `capture_lead` after collecting project name, caller name, phone number, and budget.
 
-This is the fastest live-call setup because the Retell agent uses a static prompt during the call and only calls `capture_lead` after collecting project name, caller name, phone number, and budget.
+The admin portal also generates a Retell prompt from the current Projects JSON. Use **Copy Prompt** as a fallback or when you want to refresh the static prompt instructions, but day-to-day project maintenance should happen through **Save Config** plus the `get_projects` function.
 
-Admin config and generated prompt:
+Admin config and generated prompt helper:
 
 ![Admin page config editor](assets/admin-generated-retell-prompt.png)
 
@@ -321,7 +354,7 @@ Fallback behavior:
 
 - Normal operation: load config from Supabase `app_config`.
 - Missing/offline config: use `data/business.json`, `data/projects.json`, and `data/priority-rules.json`.
-- Retell lead capture still works during fallback because `capture_lead` uses the same runtime config loader.
+- Retell project lookup and lead capture still work during fallback because `get_projects` and `capture_lead` use the same runtime config loader.
 
 ## 7. OpenAI Lead Enrichment
 
