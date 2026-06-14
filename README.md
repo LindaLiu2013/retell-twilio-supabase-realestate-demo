@@ -124,7 +124,7 @@ OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-4.1-mini
 ```
 
-Use `gpt-4.1-mini` for this MVP unless you have confirmed another model is available to your OpenAI API key. Model names must be exact.
+Use `gpt-4.1-mini` unless you have confirmed another model is available to your OpenAI API key. Model names must be exact.
 
 When `OPENAI_API_KEY` is set, the backend asks OpenAI to return structured JSON for:
 
@@ -134,7 +134,7 @@ When `OPENAI_API_KEY` is set, the backend asks OpenAI to return structured JSON 
 
 If OpenAI is not configured, the model is unavailable, or the API call fails, the app falls back to the local priority rules so lead capture still works.
 
-For local testing of `/demo/lead`, Supabase is required. SMS/email are skipped if their env vars are missing. This means the MVP works in both cases:
+For local testing of `/demo/lead`, Supabase is required. SMS/email are skipped if their env vars are missing. This means the demo works in both cases:
 
 - no Twilio number yet: lead is saved to Supabase, SMS is skipped, email is sent if configured
 - Twilio SMS-capable number provided: lead is saved to Supabase and SMS notification is sent
@@ -166,7 +166,7 @@ Add a Retell custom function for lead capture:
   "name": "capture_lead",
   "description": "Save a qualified real estate project enquiry lead after project, name, phone and budget have been collected.",
   "method": "POST",
-  "url": "https://YOUR-RENDER-SERVICE.onrender.com/retell/functions/capture-lead",
+  "url": "https://retell-twilio-supabase-realestate-demo.onrender.com/retell/functions/capture-lead",
   "headers": {
     "Content-Type": "application/json"
   },
@@ -240,7 +240,7 @@ RETELL_VERIFY_SIGNATURE=false
 
 ## 4. Twilio Inbound Call Setup
 
-Twilio is optional for the first backend MVP. If you do not have a Twilio number yet, test the Retell agent through Retell's own test tools and use the Retell custom function endpoint to save leads.
+Twilio is optional for the first backend version. If you do not have a Twilio number yet, test the Retell agent through Retell's own test tools and use the Retell custom function endpoint to save leads.
 
 When you are ready for public inbound calls, there are two practical patterns.
 
@@ -253,7 +253,7 @@ Use Retell's custom telephony setup with Twilio Elastic SIP Trunking and import/
 Set your Twilio number's Voice webhook to:
 
 ```text
-https://YOUR-RENDER-SERVICE.onrender.com/twilio/inbound
+https://retell-twilio-supabase-realestate-demo.onrender.com/twilio/inbound
 ```
 
 The endpoint returns:
@@ -291,7 +291,7 @@ RETELL_SIP_URI=sip:your-configured-retell-or-trunk-uri
 After deployment, open:
 
 ```text
-https://YOUR-RENDER-SERVICE.onrender.com/admin
+https://retell-twilio-supabase-realestate-demo.onrender.com/admin
 ```
 
 The page loads the current business, projects, and priority-rules JSON automatically. Click **Load** to refresh it manually.
@@ -437,7 +437,7 @@ curl -X POST http://localhost:3000/twilio/inbound \
 
 - Add Twilio request signature validation before trusting Twilio webhooks.
 - Keep `RETELL_VERIFY_SIGNATURE=true` outside local development.
-- Add authentication before exposing the admin portal beyond this basic MVP.
+- Add authentication before exposing the admin portal beyond a controlled demo environment.
 - Add RLS policies if you expose Supabase data directly to a frontend.
 - Consider an audit log for admin config changes before using this with multiple staff.
 - Add duplicate lead handling by caller phone and project within a time window.
